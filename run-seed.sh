@@ -1,1 +1,0 @@
-SEEDS='' python src/seed-server.py

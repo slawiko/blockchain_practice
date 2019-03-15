@@ -1,0 +1,1 @@
+SEEDS='127.0.0.1:8765' PORT=8766 python src/seed-server.py
