@@ -14,19 +14,19 @@ class Node():
     self.pool = Pool()
   
   async def start(self):
-    await websockets.serve(self.listen_incoming, self.address[0], self.address[1])
+    await websockets.serve(self._listen_incoming, self.address[0], self.address[1])
     print(f'ws server started at {self.address[0]}:{self.address[1]}')
-    await self.connect(self.seeds)
+    await self._connect(self.seeds)
     print(f'ws server connected to peers')
     await self.schedule_task()
     print(f'ws scheduled task')
   
-  async def connect(self, addresses):
+  async def _connect(self, addresses):
     for address in addresses:
       websocket = await websockets.connect(f'ws://{address[0]}:{address[1]}')
-      await self.listen_outgoing(websocket, address)
+      await self._listen_outgoing(websocket, address)
 
-  async def broadcast_event(self, event):
+  async def broadcast(self, event):
     tasks = [Node.send(connection, event) for connection in self.pool.connections]
     if len(tasks) > 0:
       print(f'broadcast on {len(tasks)} peers')
@@ -39,13 +39,13 @@ class Node():
       event = Event.construct(Event.GET_PEERS_REQUEST)
       while True:
         await asyncio.sleep(15)
-        await self.broadcast_event(event)
+        await self.broadcast(event)
     try:
       asyncio.get_event_loop().create_task(get_new_peers())
     except Exception as error:
       print(f'unable to connect. {error}')
 
-  async def listen(self, websocket, uri=''):
+  async def _listen(self, websocket, uri=''):
     while True:
       message = await websocket.recv()
       print(f'Received {message} from {websocket.local_address}:{websocket.remote_address}')
@@ -54,26 +54,31 @@ class Node():
         await Node.send(websocket, answer)
         print(f'Sent {answer} to {websocket.local_address}')
 
-  async def listen_outgoing(self, websocket, address):
+  async def _listen_outgoing(self, websocket, address):
     await self.pool.register_connection(address, websocket, 'to')
-    asyncio.ensure_future(self.listen(websocket))
+    asyncio.ensure_future(self._listen(websocket))
     my_address_event = Event.construct(Event.MY_ADDRESS, self.address)
     await Node.send(websocket, my_address_event)
 
-  async def listen_incoming(self, websocket, uri=''):
+  async def _listen_incoming(self, websocket, uri=''):
     # TODO: why await? It doesn't work without await
-    asyncio.ensure_future(await self.listen(websocket, uri))
+    asyncio.ensure_future(await self._listen(websocket, uri))
 
   def handle_get_peers_request(self):
     return Event.construct(Event.GET_PEERS_RESPONSE, self.pool.addresses)
 
-  async def handle_get_peers_response(self, addresses):
+  async def handle_get_peers_response(self, data):
+    addresses = [tuple(x) for x in data]
     new_addresses = [address for address in addresses if address not in self.pool.peers]
     new_addresses.remove(self.address)
     if new_addresses:
       print(f'New peers found: {new_addresses}')
-      await self.connect(new_addresses)
+      await self._connect(new_addresses)
     print(f'No new peers found')
+
+  async def handle_my_address(self, data, websocket):
+    address = tuple()
+    await self.pool.register_connection(address, websocket, 'from')
 
   async def handle_message(self, message, websocket):
     event = json.loads(message)
@@ -81,11 +86,9 @@ class Node():
     if event['event'] == Event.GET_PEERS_REQUEST:
       answer = self.handle_get_peers_request()
     elif event['event'] == Event.GET_PEERS_RESPONSE:
-      addresses = [tuple(x) for x in event['data']]
-      asyncio.ensure_future(self.handle_get_peers_response(addresses))
+      asyncio.ensure_future(self.handle_get_peers_response(event['data']))
     elif event['event'] == Event.MY_ADDRESS:
-      address = tuple(event['data'])
-      await self.pool.register_connection(address, websocket, 'from')
+      asyncio.ensure_future(self.handle_my_address(event['data'], websocket))
     else:
       print(f'Unknown event {event}')
     return answer
