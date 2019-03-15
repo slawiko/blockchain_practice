@@ -1,1 +1,1 @@
-SEEDS='' PORT=8765 python src/seed-server.py
+SEEDS='' PORT=8765 python src/main.py

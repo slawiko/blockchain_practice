@@ -1,1 +1,1 @@
-SEEDS='127.0.0.1:8765' PORT=8766 python src/seed-server.py
+SEEDS='10.0.1.3:8765' PORT=8766 python src/main.py
