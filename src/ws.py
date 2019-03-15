@@ -5,7 +5,7 @@ import websockets
 from websockets.exceptions import ConnectionClosed
 
 from peers import Peers
-from events_constructor import event_get_peers_request, event_get_peers_response, event_my_address_response
+from events_constructor import Event
 
 class Node():
   def __init__(self, seeds=[('127.0.0.1', 8765)], port=80):
@@ -36,7 +36,7 @@ class Node():
 
   async def schedule_task(self):
     async def get_new_peers():
-      event = event_get_peers_request()
+      event = Event.construct(Event.GET_PEERS_REQUEST)
       while True:
         await asyncio.sleep(15)
         await self.broadcast_event(event)
@@ -51,13 +51,13 @@ class Node():
       print(f'Received {message} from {websocket.local_address}:{websocket.remote_address}')
       answer = await self.handle_message(message, websocket)
       if answer:
-        await websocket.send(answer)
+        await Node.send(websocket, answer)
         print(f'Sent {answer} to {websocket.local_address}')
 
   async def listen_outgoing(self, websocket, address):
     await self.peers.register_connection(address, websocket, 'to')
     asyncio.ensure_future(self.listen(websocket))
-    my_address_event = event_my_address_response(self.address)
+    my_address_event = Event.construct(Event.MY_ADDRESS, self.address)
     await Node.send(websocket, my_address_event)
 
   async def listen_incoming(self, websocket, uri=''):
@@ -65,7 +65,7 @@ class Node():
     asyncio.ensure_future(await self.listen(websocket, uri))
 
   def handle_get_peers_request(self):
-    return event_get_peers_response(list(self.peers.peers.keys()))
+    return Event.construct(Event.GET_PEERS_RESPONSE, list(self.peers.peers.keys()))
 
   async def handle_get_peers_response(self, data):
     new_peers = {}
@@ -79,11 +79,11 @@ class Node():
   async def handle_message(self, message, websocket):
     event = json.loads(message)
     answer = None
-    if event['event'] == 'GET_PEERS_REQUEST':
+    if event['event'] == Event.GET_PEERS_REQUEST:
       answer = self.handle_get_peers_request()
-    elif event['event'] == 'GET_PEERS_RESPONSE':
+    elif event['event'] == Event.GET_PEERS_RESPONSE:
       asyncio.ensure_future(self.handle_get_peers_response(event['data']))
-    elif event['event'] == 'MY_ADDRESS_RESPONSE':
+    elif event['event'] == Event.MY_ADDRESS:
       address = tuple(event['data'])
       await self.peers.register_connection(address, websocket, 'from')
     else:

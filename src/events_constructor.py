@@ -1,5 +1,6 @@
 import json
 from collections import deque
+from enum import EnumMeta
 
 class EventsQueue():
   def __init__(self, iterable=[]):
@@ -11,11 +12,15 @@ class EventsQueue():
   def put(self, element):
     self.queue.append(element)
 
-def event_my_address_response(address):
-  return json.dumps({ 'event': 'MY_ADDRESS_RESPONSE', 'data': address })
+class Event(EnumMeta):
+  MY_ADDRESS = 'MY_ADDRESS'
+  GET_PEERS_REQUEST = 'GET_PEERS_REQUEST'
+  GET_PEERS_RESPONSE = 'GET_PEERS_RESPONSE'
 
-def event_get_peers_request():
-  return json.dumps({ 'event': 'GET_PEERS_REQUEST' })
+  @staticmethod
+  def construct(event_type, data=None):
+    event = { 'event': event_type }
+    if data:
+      event['data'] = data
 
-def event_get_peers_response(data):
-  return json.dumps({ 'event': 'GET_PEERS_RESPONSE', 'data': data })
+    return json.dumps(event)

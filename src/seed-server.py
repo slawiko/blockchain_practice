@@ -14,10 +14,12 @@ def parse_addresses(seeds):
   parts = seeds.split(',')
   addresses = parts if len(parts[0]) > 0 else []
   parsed = list(map(parse_ip, addresses))
+  if not parsed:
+    parsed = [('127.0.0.1', 8765)]
   return parsed
 
 PORT = os.environ.get('PORT') or 8765
-SEEDS = parse_addresses(os.environ.get('SEEDS')) if os.environ.get('SEEDS') is '' else [('127.0.0.1', 8765)]
+SEEDS = [] if os.environ.get('SEEDS') is '' else parse_addresses(os.environ.get('SEEDS'))
 
 loop = asyncio.get_event_loop()
 
