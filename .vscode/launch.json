@@ -31,6 +31,7 @@
       "port": 5678,
       "env": {
         "PORT": 8766,
+        "SEEDS": "127.0.0.1:8765",
         "PYTHONASYNCIODEBUG": 1
       },
       "program": "/Users/slawiko/workspace/practice_blockchain/src/seed-server.py",
@@ -43,6 +44,7 @@
       "port": 5679,
       "env": {
         "PORT": 8767,
+        "SEEDS": "127.0.0.1:8765",
         "PYTHONASYNCIODEBUG": 1
       },
       "program": "/Users/slawiko/workspace/practice_blockchain/src/seed-server.py",
@@ -55,6 +57,7 @@
       "port": 5680,
       "env": {
         "PORT": 8768,
+        "SEEDS": "127.0.0.1:8765",
         "PYTHONASYNCIODEBUG": 1
       },
       "program": "/Users/slawiko/workspace/practice_blockchain/src/seed-server.py",
