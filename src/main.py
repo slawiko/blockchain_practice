@@ -2,7 +2,7 @@ import asyncio
 import os
 import logging
 
-from ws import Node
+from node import Node
 
 logging.basicConfig(level=logging.WARNING)
 
@@ -19,9 +19,16 @@ def parse_addresses(seeds):
 PORT = os.environ.get('PORT') or 8765
 SEEDS = [] if not os.environ.get('SEEDS') else parse_addresses(os.environ.get('SEEDS'))
 
-loop = asyncio.get_event_loop()
-
-node = Node(SEEDS, port=PORT)
-loop.create_task(node.start())
-loop.run_forever()
-
+if __name__ == '__main__':
+  loop = asyncio.get_event_loop()
+  try:
+    node = Node(SEEDS, port=PORT)
+    loop.create_task(node.start())
+    # loop.create_task(flask.app)
+    loop.run_forever()
+  except KeyboardInterrupt:
+    print(f'Exited by user')
+  finally:
+    loop.close()
+else:
+  raise ImportError('script can not be imported')

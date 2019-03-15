@@ -5,7 +5,7 @@ import websockets
 from websockets.exceptions import ConnectionClosed
 
 from pool import Pool
-from events_constructor import Event
+from event import Event
 
 class Node():
   def __init__(self, seeds, ip='127.0.0.1', port=80, auto_discovering=True, auto_discovering_interval=60):
