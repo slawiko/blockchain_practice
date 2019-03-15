@@ -80,7 +80,7 @@ class Node():
     print(f'No new peers found')
 
   async def _handle_my_address(self, data, websocket):
-    address = tuple()
+    address = tuple(data)
     await self._pool.register_connection(address, websocket, 'from')
 
   async def _handle_message(self, message, websocket):

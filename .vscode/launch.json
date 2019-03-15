@@ -21,7 +21,7 @@
         "SEEDS": "",
         "PYTHONASYNCIODEBUG": 1
       },
-      "program": "/Users/slawiko/workspace/practice_blockchain/src/seed-server.py",
+      "program": "${workspaceFolder}/src/main.py",
       "console": "integratedTerminal"
     },
     {
@@ -34,7 +34,7 @@
         "SEEDS": "127.0.0.1:8765",
         "PYTHONASYNCIODEBUG": 1
       },
-      "program": "/Users/slawiko/workspace/practice_blockchain/src/seed-server.py",
+      "program": "${workspaceFolder}/src/main.py",
       "console": "integratedTerminal"
     },
     {
@@ -47,7 +47,7 @@
         "SEEDS": "127.0.0.1:8765",
         "PYTHONASYNCIODEBUG": 1
       },
-      "program": "/Users/slawiko/workspace/practice_blockchain/src/seed-server.py",
+      "program": "${workspaceFolder}/src/main.py",
       "console": "integratedTerminal"
     },
     {
@@ -60,7 +60,7 @@
         "SEEDS": "127.0.0.1:8765",
         "PYTHONASYNCIODEBUG": 1
       },
-      "program": "/Users/slawiko/workspace/practice_blockchain/src/seed-server.py",
+      "program": "${workspaceFolder}/src/main.py",
       "console": "integratedTerminal"
     },
     {
