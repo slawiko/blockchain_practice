@@ -12,17 +12,53 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "Python: Remote Attach",
+      "name": "Python: client 1",
       "type": "python",
-      "request": "attach",
+      "request": "launch",
+      "port": 5677,
+      "env": {
+        "PORT": 8765,
+        "SEEDS": "",
+        "PYTHONASYNCIODEBUG": 1
+      },
+      "program": "/Users/slawiko/workspace/practice_blockchain/src/seed-server.py",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Python: client 2",
+      "type": "python",
+      "request": "launch",
       "port": 5678,
-      "host": "localhost",
-      "pathMappings": [
-        {
-          "localRoot": "${workspaceFolder}",
-          "remoteRoot": "."
-        }
-      ]
+      "env": {
+        "PORT": 8766,
+        "PYTHONASYNCIODEBUG": 1
+      },
+      "program": "/Users/slawiko/workspace/practice_blockchain/src/seed-server.py",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Python: client 3",
+      "type": "python",
+      "request": "launch",
+      "port": 5679,
+      "env": {
+        "PORT": 8767,
+        "PYTHONASYNCIODEBUG": 1
+      },
+      "program": "/Users/slawiko/workspace/practice_blockchain/src/seed-server.py",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Python: client 4",
+      "type": "python",
+      "request": "launch",
+      "port": 5680,
+      "env": {
+        "PORT": 8768,
+        "PYTHONASYNCIODEBUG": 1
+      },
+      "program": "/Users/slawiko/workspace/practice_blockchain/src/seed-server.py",
+      "console": "integratedTerminal"
     },
     {
       "name": "Python: Module",
@@ -58,13 +94,6 @@
         "--no-reload"
       ],
       "jinja": true
-    },
-    {
-      "name": "Python: Current File (External Terminal)",
-      "type": "python",
-      "request": "launch",
-      "program": "${file}",
-      "console": "externalTerminal"
     }
   ]
 }
