@@ -21,7 +21,7 @@ SEEDS = [] if not os.environ.get('SEEDS') else parse_addresses(os.environ.get('S
 
 loop = asyncio.get_event_loop()
 
-node = Node(SEEDS, PORT)
+node = Node(SEEDS, port=PORT)
 loop.create_task(node.start())
 loop.run_forever()
 
