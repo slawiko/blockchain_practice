@@ -6,10 +6,12 @@ from websockets.exceptions import ConnectionClosed
 
 from pool import Pool
 from event import Event
+from blockchain import Blockchain
 
 class Node():
   def __init__(self, seeds, ip='127.0.0.1', port=80, auto_discovering=True, auto_discovering_interval=60):
     self.address = (ip, int(port))
+    self.blockchain = Blockchain()
     self._auto_discovering = auto_discovering
     self._auto_discovering_interval = auto_discovering_interval
     self._seeds = seeds
@@ -35,7 +37,7 @@ class Node():
       print(f'broadcast on {len(tasks)} peers')
       await asyncio.gather(*tasks)
     else:
-      print(f'no one to broadcast')
+      print(f'no one to broadcast event {event}')
 
   async def _start_auto_discover(self):
     async def get_new_peers():
@@ -83,6 +85,19 @@ class Node():
     address = tuple(data)
     await self._pool.register_connection(address, websocket, 'from')
 
+  async def _handle_add_transaction(self, event):
+    await self.add_transaction(event['data'])
+
+  async def add_transaction(self, transaction):
+    done = self.blockchain.add_transaction('test', transaction)
+    if done:
+      event = Event.construct(Event.ADD_TRANSACTION, transaction)
+      await self.broadcast(event)
+      return done
+
+  def get_transactions(self):
+    return self.blockchain.transactions
+
   async def _handle_message(self, message, websocket):
     event = json.loads(message)
     answer = None
@@ -92,6 +107,8 @@ class Node():
       asyncio.ensure_future(self._handle_get_peers_response(event['data']))
     elif event['event'] == Event.MY_ADDRESS:
       asyncio.ensure_future(self._handle_my_address(event['data'], websocket))
+    elif event['event'] == Event.ADD_TRANSACTION:
+      asyncio.ensure_future(self._handle_add_transaction(event['data']))
     else:
       print(f'Unknown event {event}')
     return answer

@@ -2,56 +2,52 @@ import hashlib
 import json
 from time import time
 
-genesis = {
-  'index': 0,
-  'timestamp': time(),
-  'transactions': (),
-  'previous_hash': '0'
-}
+from block import Block
+
+def is_valid_chain(chain):
+  if chain[0] != Block.genesis():
+    return False
+
+  for i in range(1, len(chain)):
+    previous = chain[i - 1]
+    current = chain[i]
+    if current.previousHash != previous.hash():
+      return False
+  
+  return True
 
 class Blockchain:
   def __init__(self):
     self.chain = []
-    self.chain.append(genesis)
+    self.chain.append(Block.genesis())
     self.transactions = []
 
-  def add_transaction(self, actor, signature):
-    self.transactions.append({
-      'actor': actor,
-      'action': 'allow',
-      'signature': signature
-    })
+  def add_transaction(self, initiator, data):
+    # TODO nice way for not-adding existing transactions
+    transaction = {
+      'initiator': initiator,
+      'data': data
+    }
+    if transaction in self.transactions:
+      return False
 
+    self.transactions.append(transaction)
     return True
 
-  def add_block(self, proof):
-    if not self.is_valid_proof(proof):
+  def add_block(self):
+    if len(self.transactions) == 0:
       return False
     
-    block = {
-      'index': self.last_block['index'] + 1,
-      'timestamp': time(),
-      'transactions': tuple(self.transactions),
-      'proof': proof,
-      'previous_hash': self.last_block_hash
-    }
-
-    self.chain.append(block)
+    self.chain.append(Block(self.last_block_hash, self.transactions))
     self.transactions = []
 
     return self.last_block_hash
 
-  def is_valid_proof(self, proof):
-    guess = f'{proof}{self.last_block_hash}'.encode()
-    guess_hash = hashlib.sha256(guess).hexdigest()
-
-    result = guess_hash[:2] == '00'
-    print(f'Proof has {guess_hash} as hash and it\'s {result}')
-    return result
-
-  @staticmethod
-  def hash(block):
-    return hashlib.sha256(json.dumps(block, sort_keys=True).encode('utf-8')).hexdigest()
+  def replace_chain(self, chain):
+    if len(chain) <= len(self.chain):
+      raise ValueError('New chain must be greater than old one')
+    
+    self.chain = chain
 
   @property
   def last_block(self):
@@ -59,4 +55,4 @@ class Blockchain:
 
   @property
   def last_block_hash(self):
-    return self.hash(self.last_block)
+    return self.last_block.calculateHash()
