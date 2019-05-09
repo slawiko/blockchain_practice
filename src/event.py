@@ -9,9 +9,13 @@ class Event(EnumMeta):
     ADD_TRANSACTION = 'ADD_TRANSACTION'
 
     @staticmethod
-    def construct(event_type, data=None):
+    def construct(event_type, data=None, signature=None):
         event = {'event': event_type}
         if data:
             event['data'] = data
 
+        if signature:
+            event['sign'] = signature
+
+        # TODO: json is not working here because data can be bytes
         return json.dumps(event)

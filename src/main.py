@@ -29,10 +29,9 @@ def main(loop):
 
     @app.route('/transactions/new', methods=['POST'])
     async def new_transaction(request):
-        data = request.json
-        print(data)
-        # TODO initiator
-        result = await node.add_transaction(data)
+        data = request.body
+
+        result = await node.create_transaction(data)
         if result:
             message = 'Transaction will be added'
         else:
@@ -45,21 +44,9 @@ def main(loop):
         transactions = node.get_transactions()
         return response.json({'transactions': transactions})
 
-    # @app.route('/mine', methods=['POST'])
-    # def mine():
-    #   if blockchain.add_block():
-    #     message = 'Mining is succeed'
-    #     status = 200
-    #   else:
-    #     message = 'Mining is failed'
-    #     status = 500
-
-    #   response = { 'message': message }
-    #   return jsonify(response), status
-
-    # @app.route('/', methods=['GET'])
-    # def debug():
-    #   return jsonify({ 'blockchain': blockchain.chain, 'transactions': blockchain.transactions }), 200
+    @app.route('/public-key', methods=['GET'])
+    def get_public_key(request):
+        return response.text(node.public_key())
 
     app.add_task(node.start())
     app.run(host="127.0.0.1", port=args.i_port)

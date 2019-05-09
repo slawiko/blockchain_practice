@@ -8,6 +8,7 @@ from websockets.exceptions import ConnectionClosed
 from pool import Pool
 from event import Event
 from blockchain import Blockchain
+from transaction import create
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -96,20 +97,28 @@ class Node:
         address = tuple(data)
         await self._pool.register_connection(address, websocket, 'from')
 
-    async def _handle_add_transaction(self, event):
-        await self.add_transaction(event['data'])
+    async def _handle_add_transaction(self, data, signature):
+        await self.add_transaction(data, signature)
 
-    async def add_transaction(self, transaction):
-        done = self.blockchain.add_transaction('test', transaction)
+    async def create_transaction(self, data):
+        transaction, signature = create(data)
+        return await self.add_transaction(transaction, signature)
+
+    async def add_transaction(self, transaction, signature):
+        done = self.blockchain.add_transaction(transaction, signature)
         if done:
-            event = Event.construct(Event.ADD_TRANSACTION, transaction)
+            event = Event.construct(Event.ADD_TRANSACTION, transaction, signature)
             await self.broadcast(event)
             return done
 
     def get_transactions(self):
         return self.blockchain.transactions
 
+    def public_key(self):
+        return self.blockchain.public_key.to_string()
+
     async def _handle_message(self, message, websocket):
+        # TODO: json is not working here because data can be bytes
         event = json.loads(message)
         answer = None
         if event['event'] == Event.GET_PEERS_REQUEST:
@@ -119,7 +128,7 @@ class Node:
         elif event['event'] == Event.MY_ADDRESS:
             asyncio.ensure_future(self._handle_my_address(event['data'], websocket))
         elif event['event'] == Event.ADD_TRANSACTION:
-            asyncio.ensure_future(self._handle_add_transaction(event['data']))
+            asyncio.ensure_future(self._handle_add_transaction(event['data'], event['sign']))
         else:
             log.warning(f'Unknown event {event}')
         return answer

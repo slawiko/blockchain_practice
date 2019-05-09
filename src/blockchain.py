@@ -1,8 +1,5 @@
-import hashlib
-import json
-from time import time
-
 from block import Block
+from transaction import is_valid, keys
 
 
 def is_valid_chain(chain):
@@ -23,13 +20,13 @@ class Blockchain:
         self.chain = []
         self.chain.append(Block.genesis())
         self.transactions = []
+        self.__private_key, self.public_key = keys()
 
-    def add_transaction(self, initiator, data):
+    def add_transaction(self, transaction, signature):
+        if not is_valid(transaction, signature):
+            return False
+
         # TODO nice way for not-adding existing transactions
-        transaction = {
-            'initiator': initiator,
-            'data': data
-        }
         if transaction in self.transactions:
             return False
 
