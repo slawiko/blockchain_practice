@@ -1,1 +1,1 @@
-SEEDS='127.0.0.1:8765' PORT=8766 python src/main.py
+python src/main.py --interface-port 8080 --node-port 8766 --seeds 127.0.0.1:8765

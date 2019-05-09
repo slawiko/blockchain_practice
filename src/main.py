@@ -1,5 +1,5 @@
 import asyncio
-import os
+import argparse
 import logging
 
 from sanic import Sanic, response
@@ -7,26 +7,23 @@ from sanic import Sanic, response
 from node import Node
 
 logging.basicConfig(level=logging.WARNING)
+log = logging.getLogger(__name__)
+log.setLevel(logging.DEBUG)
 
+parser = argparse.ArgumentParser(description='Run node', add_help=True)
 
-def parse_ip(ip):
-    parts = ip.split(':')
-    return parts[0], int(parts[1]) if len(parts) > 1 else 80
+parser.add_argument('--interface-port', metavar='i_port', type=int, nargs='?', dest='i_port', default=8080,
+                    help='port for interface')
+parser.add_argument('--node-port', metavar='n_port', type=int, nargs='?', dest='n_port', default=8765,
+                    help='port for blockchain node')
+parser.add_argument('--seeds', metavar='SEEDS', type=str, nargs='*', dest='seeds', default=[],
+                    help='list of seeds blockchain will connect to')
 
-
-def parse_addresses(seeds):
-    parts = seeds.split(',')
-    addresses = parts if len(parts[0]) > 0 else []
-    parsed = list(map(parse_ip, addresses))
-    return parsed
-
-
-PORT = os.environ.get('PORT') or 8765
-SEEDS = [] if not os.environ.get('SEEDS') else parse_addresses(os.environ.get('SEEDS'))
+args = parser.parse_args()
 
 
 def main(loop):
-    node = Node(SEEDS, port=PORT)
+    node = Node(args.seeds, port=args.n_port)
 
     app = Sanic()
 
@@ -65,7 +62,7 @@ def main(loop):
     #   return jsonify({ 'blockchain': blockchain.chain, 'transactions': blockchain.transactions }), 200
 
     app.add_task(node.start())
-    app.run(host="127.0.0.1", port=8080)
+    app.run(host="127.0.0.1", port=args.i_port)
 
 
 if __name__ == '__main__':
@@ -73,7 +70,7 @@ if __name__ == '__main__':
     try:
         main(loop)
     except KeyboardInterrupt:
-        print(f'Exited by user')
+        log.info(f'Exited by user')
     finally:
         loop.close()
 else:

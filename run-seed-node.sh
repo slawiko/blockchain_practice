@@ -1,1 +1,1 @@
-SEEDS='' PORT=8765 python src/main.py
+python src/main.py --interface-port 8081 --node-port 8765
