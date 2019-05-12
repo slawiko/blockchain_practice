@@ -31,7 +31,7 @@ class Pool:
         asyncio.ensure_future(self.unregister_connection(address))
 
     async def unregister_connection(self, address, reason='closed'):
-        # TODO: websockets 6.0 do not have wait_closed() method
+        # TODO: websockets 6.0 do not have wait_closed() method in Protocol
         await self._peers[address].wait_closed()
         del self._peers[address]
         log.info(f'{address} is unregistered. Reason: {reason}')

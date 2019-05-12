@@ -1,4 +1,4 @@
-import json
+import pickle
 import asyncio
 import logging
 
@@ -118,8 +118,7 @@ class Node:
         return self.blockchain.public_key.to_string()
 
     async def _handle_message(self, message, websocket):
-        # TODO: json is not working here because data can be bytes
-        event = json.loads(message)
+        event = pickle.loads(message)
         answer = None
         if event['event'] == Event.GET_PEERS_REQUEST:
             answer = self._handle_get_peers_request()

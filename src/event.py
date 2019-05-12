@@ -1,4 +1,4 @@
-import json
+import pickle
 from enum import EnumMeta
 
 
@@ -17,5 +17,4 @@ class Event(EnumMeta):
         if signature:
             event['sign'] = signature
 
-        # TODO: json is not working here because data can be bytes
-        return json.dumps(event)
+        return pickle.dumps(event)
