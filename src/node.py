@@ -1,4 +1,3 @@
-import pickle
 import asyncio
 import logging
 
@@ -48,7 +47,7 @@ class Node:
             log.info(f'broadcast on {len(tasks)} peers')
             await asyncio.gather(*tasks)
         else:
-            log.warning(f'no one to broadcast event {event}')
+            log.warning(f'no one to broadcast event')
 
     async def _start_auto_discover(self):
         async def get_new_peers():
@@ -65,11 +64,11 @@ class Node:
     async def _listen(self, websocket, uri=''):
         while True:
             message = await websocket.recv()
-            log.info(f'Received {message} from {websocket.local_address}:{websocket.remote_address}')
-            answer = await self._handle_message(message, websocket)
-            if answer:
-                await Node.send(websocket, answer)
-                log.info(f'Sent {answer} to {websocket.local_address}')
+            log.info(f'Received event from {websocket.local_address}:{websocket.remote_address}')
+            response = await self._handle_message(message, websocket)
+            if response:
+                await Node.send(websocket, response)
+                log.info(f'Sent response to {websocket.local_address}')
 
     async def _listen_outgoing(self, websocket, address):
         await self._pool.register_connection(address, websocket, 'to')
@@ -118,24 +117,24 @@ class Node:
         return self.blockchain.public_key.to_string()
 
     async def _handle_message(self, message, websocket):
-        event = pickle.loads(message)
-        answer = None
-        if event['event'] == Event.GET_PEERS_REQUEST:
-            answer = self._handle_get_peers_request()
-        elif event['event'] == Event.GET_PEERS_RESPONSE:
+        event = Event.parse(message)
+        response = None
+        if event['type'] == Event.GET_PEERS_REQUEST:
+            response = self._handle_get_peers_request()
+        elif event['type'] == Event.GET_PEERS_RESPONSE:
             asyncio.ensure_future(self._handle_get_peers_response(event['data']))
-        elif event['event'] == Event.MY_ADDRESS:
+        elif event['type'] == Event.MY_ADDRESS:
             asyncio.ensure_future(self._handle_my_address(event['data'], websocket))
-        elif event['event'] == Event.ADD_TRANSACTION:
+        elif event['type'] == Event.ADD_TRANSACTION:
             asyncio.ensure_future(self._handle_add_transaction(event['data'], event['sign']))
         else:
             log.warning(f'Unknown event {event}')
-        return answer
+        return response
 
     @staticmethod
     async def send(websocket, message):
         try:
-            log.info(f'Sending {message} to {websocket.local_address}:{websocket.remote_address}')
+            log.info(f'Sending event to {websocket.local_address}:{websocket.remote_address}')
             await websocket.send(message)
         except ConnectionClosed as cc:
             log.info(f'Connection to {websocket} is closed. {cc}')

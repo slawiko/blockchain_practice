@@ -9,8 +9,12 @@ class Event(EnumMeta):
     ADD_TRANSACTION = 'ADD_TRANSACTION'
 
     @staticmethod
+    def parse(serialized_event):
+        return pickle.loads(serialized_event)
+
+    @staticmethod
     def construct(event_type, data=None, signature=None):
-        event = {'event': event_type}
+        event = {'type': event_type}
         if data:
             event['data'] = data
 

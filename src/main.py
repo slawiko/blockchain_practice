@@ -1,4 +1,3 @@
-import asyncio
 import argparse
 import logging
 
@@ -22,9 +21,7 @@ parser.add_argument('--seeds', metavar='SEEDS', type=str, nargs='*', dest='seeds
 args = parser.parse_args()
 
 
-def main(loop):
-    node = Node(args.seeds, port=args.n_port)
-
+def main(node):
     app = Sanic()
 
     @app.route('/transactions/new', methods=['POST'])
@@ -53,12 +50,7 @@ def main(loop):
 
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    try:
-        main(loop)
-    except KeyboardInterrupt:
-        log.info(f'Exited by user')
-    finally:
-        loop.close()
+    main(Node(args.seeds, port=args.n_port))
+
 else:
     raise ImportError('script can not be imported')
