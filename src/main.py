@@ -1,9 +1,11 @@
 import argparse
 import logging
+import json
 
 from sanic import Sanic, response
 
 from node import Node
+from transaction import Transaction
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
@@ -19,6 +21,13 @@ parser.add_argument('--seeds', metavar='SEEDS', type=str, nargs='*', dest='seeds
                     help='list of seeds blockchain will connect to')
 
 args = parser.parse_args()
+
+
+def custom_dumps(transactions):
+    if all(isinstance(t, Transaction) for t in transactions):
+        return json.dumps(list(map(Transaction.dumps, transactions)))
+
+    raise TypeError('only list of Transactions is supported')
 
 
 def main(node):
@@ -39,7 +48,7 @@ def main(node):
     @app.route('/transactions')
     def get_transactions(request):
         transactions = node.get_transactions()
-        return response.json({'transactions': transactions})
+        return response.json(transactions, dumps=custom_dumps)
 
     @app.route('/public-key', methods=['GET'])
     def get_public_key(request):

@@ -1,19 +1,13 @@
 import pickle
 import os
 import logging
-from enum import EnumMeta
+import json
 
 import ecdsa
 
 logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
-
-
-class TransactionFields(EnumMeta):
-    PUBLIC = 'public'
-    DATA = 'data'
-
 
 private, public = None, None
 
@@ -42,23 +36,32 @@ def generate_keys():
     return sk, vk
 
 
-def is_valid(transaction, signature):
-    vk = ecdsa.VerifyingKey.from_string(transaction[TransactionFields.PUBLIC])
-    try:
-        vk.verify(signature, transaction[TransactionFields.DATA])
-        return True
-    except ecdsa.BadSignatureError:
-        return False
+class Transaction:
+    def __init__(self, data):
+        if not public or not private:
+            raise Exception('private/public key pair need to be initialized first')
 
+        self.public = public.to_string()
+        self.data = data
 
-def create(data):
-    if not public or not private:
-        raise Exception('private/public key pair need to be initialized first')
+    def sign(self):
+        if not public or not private:
+            raise Exception('private/public key pair need to be initialized first')
 
-    transaction = {
-        TransactionFields.PUBLIC: public.to_string(),
-        TransactionFields.DATA: data
-    }
-    signature = private.sign(data)
+        return private.sign(self.data)
 
-    return transaction, signature
+    @staticmethod
+    def dumps(transaction):
+        return {
+            "public": transaction.public.hex(),
+            "data": transaction.data.decode('utf-8'),
+        }
+
+    @staticmethod
+    def is_valid(transaction, signature):
+        vk = ecdsa.VerifyingKey.from_string(transaction.public)
+        try:
+            vk.verify(signature, transaction.data)
+            return True
+        except ecdsa.BadSignatureError:
+            return False

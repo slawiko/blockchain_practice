@@ -1,5 +1,5 @@
 from block import Block
-from transaction import is_valid, keys
+from transaction import Transaction, keys
 
 
 def is_valid_chain(chain):
@@ -23,10 +23,10 @@ class Blockchain:
         self.__private_key, self.public_key = keys()
 
     def add_transaction(self, transaction, signature):
-        if not is_valid(transaction, signature):
+        if not Transaction.is_valid(transaction, signature):
             return False
 
-        # TODO nice way for not-adding existing transactions
+        # TODO need to check hash!
         if transaction in self.transactions:
             return False
 

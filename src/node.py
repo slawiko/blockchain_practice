@@ -7,7 +7,7 @@ from websockets.exceptions import ConnectionClosed
 from pool import Pool
 from event import Event
 from blockchain import Blockchain
-from transaction import create
+from transaction import Transaction
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -100,7 +100,8 @@ class Node:
         await self.add_transaction(data, signature)
 
     async def create_transaction(self, data):
-        transaction, signature = create(data)
+        transaction = Transaction(data)
+        signature = transaction.sign()
         return await self.add_transaction(transaction, signature)
 
     async def add_transaction(self, transaction, signature):
@@ -114,7 +115,7 @@ class Node:
         return self.blockchain.transactions
 
     def public_key(self):
-        return self.blockchain.public_key.to_string()
+        return self.blockchain.public_key.to_string().hex()
 
     async def _handle_message(self, message, websocket):
         event = Event.parse(message)
