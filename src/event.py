@@ -15,7 +15,7 @@ class Event(EnumMeta):
     @staticmethod
     def construct(event_type, data=None, signature=None):
         event = {'type': event_type}
-        if data:
+        if data is not None:
             event['data'] = data
 
         if signature:

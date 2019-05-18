@@ -19,7 +19,7 @@ def parse_ip(ip):
 
 
 class Node:
-    def __init__(self, seeds, ip='0.0.0.0', port=8765, auto_discovering=True, auto_discovering_interval=60):
+    def __init__(self, seeds, ip='0.0.0.0', port=8765, auto_discovering=True, auto_discovering_interval=30):
         self.address = (ip, int(port))
         self.blockchain = Blockchain()
         self._auto_discovering = auto_discovering
@@ -28,7 +28,7 @@ class Node:
         self._pool = Pool()
 
     async def start(self):
-        await websockets.serve(self._listen_incoming, self.address[0], self.address[1])
+        await websockets.serve(self._listen_incoming, port=self.address[1])
         log.info(f'ws server started at {self.address[0]}:{self.address[1]}')
         await self._connect(self._seeds)
         log.info(f'ws server connected to peers')
@@ -80,13 +80,15 @@ class Node:
         # TODO: why await? It doesn't work without await
         asyncio.ensure_future(await self._listen(websocket, uri))
 
-    def _handle_get_peers_request(self):
-        return Event.construct(Event.GET_PEERS_RESPONSE, self._pool.addresses)
+    def _handle_get_peers_request(self, f):
+        clean_addresses = list(self._pool.addresses)
+        clean_addresses.remove(f)
+        return Event.construct(Event.GET_PEERS_RESPONSE, clean_addresses)
 
     async def _handle_get_peers_response(self, data):
         addresses = [tuple(x) for x in data]
         new_addresses = [address for address in addresses if address not in self._pool.peers]
-        new_addresses.remove(self.address)  # TODO: determine address properly
+
         if new_addresses:
             log.info(f'New peers found: {new_addresses}')
             await self._connect(new_addresses)
@@ -121,7 +123,7 @@ class Node:
         event = Event.parse(message)
         response = None
         if event['type'] == Event.GET_PEERS_REQUEST:
-            response = self._handle_get_peers_request()
+            response = self._handle_get_peers_request(websocket.remote_address)
         elif event['type'] == Event.GET_PEERS_RESPONSE:
             asyncio.ensure_future(self._handle_get_peers_response(event['data']))
         elif event['type'] == Event.MY_ADDRESS:
