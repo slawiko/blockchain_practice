@@ -53,6 +53,7 @@ class Transaction:
     def __hash(self):
         h = hashlib.sha512()
         h.update(self.data)
+        h.update(self.public)
         return h
 
     @property
