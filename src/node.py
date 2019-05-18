@@ -86,7 +86,7 @@ class Node:
     async def _handle_get_peers_response(self, data):
         addresses = [tuple(x) for x in data]
         new_addresses = [address for address in addresses if address not in self._pool.peers]
-        new_addresses.remove(self.address)
+        new_addresses.remove(self.address)  # TODO: determine address properly
         if new_addresses:
             log.info(f'New peers found: {new_addresses}')
             await self._connect(new_addresses)

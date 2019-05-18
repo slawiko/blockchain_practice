@@ -19,18 +19,17 @@ class Blockchain:
     def __init__(self):
         self.chain = []
         self.chain.append(Block.genesis())
-        self.transactions = []
+        self.transactions = {}
         self.__private_key, self.public_key = keys()
 
     def add_transaction(self, transaction, signature):
         if not Transaction.is_valid(transaction, signature):
             return False
 
-        # TODO need to check hash!
-        if transaction in self.transactions:
+        if transaction.digest in self.transactions:
             return False
 
-        self.transactions.append(transaction)
+        self.transactions[transaction.digest] = transaction
         return True
 
     def add_block(self):
@@ -38,7 +37,7 @@ class Blockchain:
             return False
 
         self.chain.append(Block(self.last_block_hash, self.transactions))
-        self.transactions = []
+        self.transactions = {}
 
         return self.last_block_hash
 

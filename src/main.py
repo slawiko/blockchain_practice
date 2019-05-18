@@ -24,8 +24,8 @@ args = parser.parse_args()
 
 
 def custom_dumps(transactions):
-    if all(isinstance(t, Transaction) for t in transactions):
-        return json.dumps(list(map(Transaction.dumps, transactions)))
+    if all(isinstance(t, Transaction) for t in transactions.values()):
+        return json.dumps(list(map(Transaction.dumps, transactions.values())))
 
     raise TypeError('only list of Transactions is supported')
 

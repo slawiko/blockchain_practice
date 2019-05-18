@@ -1,7 +1,7 @@
 import pickle
 import os
 import logging
-import json
+import hashlib
 
 import ecdsa
 
@@ -48,20 +48,33 @@ class Transaction:
         if not public or not private:
             raise Exception('private/public key pair need to be initialized first')
 
-        return private.sign(self.data)
+        return private.sign(self.digest)
+
+    def __hash(self):
+        h = hashlib.sha512()
+        h.update(self.data)
+        return h
+
+    @property
+    def digest(self):
+        return self.__hash().digest()
+
+    def hexdigest(self):
+        return self.__hash().hexdigest()
 
     @staticmethod
     def dumps(transaction):
         return {
             "public": transaction.public.hex(),
             "data": transaction.data.decode('utf-8'),
+            "hash": transaction.hexdigest()
         }
 
     @staticmethod
     def is_valid(transaction, signature):
         vk = ecdsa.VerifyingKey.from_string(transaction.public)
         try:
-            vk.verify(signature, transaction.data)
+            vk.verify(signature, transaction.digest)
             return True
         except ecdsa.BadSignatureError:
             return False
