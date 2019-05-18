@@ -19,7 +19,7 @@ def parse_ip(ip):
 
 
 class Node:
-    def __init__(self, seeds, ip='127.0.0.1', port=8765, auto_discovering=True, auto_discovering_interval=60):
+    def __init__(self, seeds, ip='0.0.0.0', port=8765, auto_discovering=True, auto_discovering_interval=60):
         self.address = (ip, int(port))
         self.blockchain = Blockchain()
         self._auto_discovering = auto_discovering

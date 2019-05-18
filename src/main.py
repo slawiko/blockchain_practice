@@ -55,7 +55,7 @@ def main(node):
         return response.text(node.public_key())
 
     app.add_task(node.start())
-    app.run(host="127.0.0.1", port=args.i_port)
+    app.run(host="0.0.0.0", port=args.i_port)
 
 
 if __name__ == '__main__':
