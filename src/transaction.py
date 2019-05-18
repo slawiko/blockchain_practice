@@ -73,9 +73,13 @@ class Transaction:
 
     @staticmethod
     def is_valid(transaction, signature):
-        vk = ecdsa.VerifyingKey.from_string(transaction.public)
-        try:
-            vk.verify(signature, transaction.digest)
-            return True
-        except ecdsa.BadSignatureError:
-            return False
+        return verify(transaction.public, transaction.digest, signature)
+
+
+def verify(public_key, data, signature):
+    vk = ecdsa.VerifyingKey.from_string(public_key)
+    try:
+        vk.verify(signature, data)
+        return True
+    except ecdsa.BadSignatureError:
+        return False
