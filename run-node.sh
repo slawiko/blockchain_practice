@@ -1,1 +1,3 @@
-python src/main.py --interface-port 8080 --node-port 8766 --seeds 127.0.0.1:8765
+#!/bin/sh
+
+python src/main.py --interface-port 8080 --node-port 8765 --seeds 10.0.1.3:8765
