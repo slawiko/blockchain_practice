@@ -3,7 +3,7 @@ from enum import EnumMeta
 
 
 class Event(EnumMeta):
-    MY_ADDRESS = 'MY_ADDRESS'
+    MY_PORT = 'MY_PORT'
     GET_PEERS_REQUEST = 'GET_PEERS_REQUEST'
     GET_PEERS_RESPONSE = 'GET_PEERS_RESPONSE'
     ADD_TRANSACTION = 'ADD_TRANSACTION'

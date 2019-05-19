@@ -19,8 +19,8 @@ def parse_ip(ip):
 
 
 class Node:
-    def __init__(self, seeds, ip='0.0.0.0', port=8765, auto_discovering=True, auto_discovering_interval=30):
-        self.address = (ip, int(port))
+    def __init__(self, seeds, port=8765, auto_discovering=True, auto_discovering_interval=30):
+        self.port = int(port)
         self.blockchain = Blockchain()
         self._auto_discovering = auto_discovering
         self._auto_discovering_interval = auto_discovering_interval
@@ -28,8 +28,8 @@ class Node:
         self._pool = Pool()
 
     async def start(self):
-        await websockets.serve(self._listen_incoming, port=self.address[1])
-        log.info(f'ws server started at {self.address[0]}:{self.address[1]}')
+        await websockets.serve(self._listen_incoming, port=self.port)
+        log.info(f'ws server started at port {self.port}')
         await self._connect(self._seeds)
         log.info(f'ws server connected to peers')
         if self._auto_discovering:
@@ -71,32 +71,30 @@ class Node:
                 log.info(f'Sent response to {websocket.local_address}')
 
     async def _listen_outgoing(self, websocket, address):
-        await self._pool.register_connection(address, websocket, 'to')
+        await self._pool.register_connection(address, websocket)
         asyncio.ensure_future(self._listen(websocket))
-        my_address_event = Event.construct(Event.MY_ADDRESS, self.address)
-        await Node.send(websocket, my_address_event)
+        my_port_event = Event.construct(Event.MY_PORT, self.port)
+        await Node.send(websocket, my_port_event)
 
     async def _listen_incoming(self, websocket, uri=''):
         # TODO: why await? It doesn't work without await
         asyncio.ensure_future(await self._listen(websocket, uri))
 
-    def _handle_get_peers_request(self, f):
-        clean_addresses = list(self._pool.addresses)
-        clean_addresses.remove(f)
-        return Event.construct(Event.GET_PEERS_RESPONSE, clean_addresses)
+    def _handle_get_peers_request(self, ws):
+        return Event.construct(Event.GET_PEERS_RESPONSE, self._pool.get_all_except(ws))
 
     async def _handle_get_peers_response(self, data):
         addresses = [tuple(x) for x in data]
-        new_addresses = [address for address in addresses if address not in self._pool.peers]
+        new_addresses = [address for address in addresses if address not in self._pool.actual_addresses]
 
         if new_addresses:
             log.info(f'New peers found: {new_addresses}')
             await self._connect(new_addresses)
         log.info(f'No new peers found')
 
-    async def _handle_my_address(self, data, websocket):
-        address = tuple(data)
-        await self._pool.register_connection(address, websocket, 'from')
+    async def _handle_my_port(self, port, websocket):
+        actual_address = Pool.actual_address(port, websocket)
+        await self._pool.register_connection(actual_address, websocket)
 
     async def _handle_add_transaction(self, data, signature):
         await self.add_transaction(data, signature)
@@ -123,11 +121,11 @@ class Node:
         event = Event.parse(message)
         response = None
         if event['type'] == Event.GET_PEERS_REQUEST:
-            response = self._handle_get_peers_request(websocket.remote_address)
+            response = self._handle_get_peers_request(websocket)
         elif event['type'] == Event.GET_PEERS_RESPONSE:
             asyncio.ensure_future(self._handle_get_peers_response(event['data']))
-        elif event['type'] == Event.MY_ADDRESS:
-            asyncio.ensure_future(self._handle_my_address(event['data'], websocket))
+        elif event['type'] == Event.MY_PORT:
+            asyncio.ensure_future(self._handle_my_port(event['data'], websocket))
         elif event['type'] == Event.ADD_TRANSACTION:
             asyncio.ensure_future(self._handle_add_transaction(event['data'], event['sign']))
         else:
