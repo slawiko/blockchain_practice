@@ -30,19 +30,19 @@ class Node:
     async def start(self):
         await websockets.serve(self._listen_incoming, port=self.port)
         log.info(f'ws server started at port {self.port}')
-        await self._connect(self._seeds)
+        await self._connect(map(parse_ip, self._seeds))
         log.info(f'ws server connected to peers')
         if self._auto_discovering:
             await self._start_auto_discover()
             log.info(f'auto discovering started')
 
     async def _connect(self, addresses):
-        for address in map(parse_ip, addresses):
+        for address in addresses:
             websocket = await websockets.connect(f'ws://{address[0]}:{address[1]}')
             await self._listen_outgoing(websocket, address)
 
     async def broadcast(self, event):
-        tasks = [Node.send(connection, event) for connection in self._pool.connections]
+        tasks = [self.send(connection, event) for connection in self._pool.connections]
         if len(tasks) > 0:
             log.info(f'broadcast on {len(tasks)} peers')
             await asyncio.gather(*tasks)
@@ -63,18 +63,24 @@ class Node:
 
     async def _listen(self, websocket, uri=''):
         while True:
-            message = await websocket.recv()
-            log.info(f'Received event from {websocket.local_address}:{websocket.remote_address}')
-            response = await self._handle_message(message, websocket)
-            if response:
-                await Node.send(websocket, response)
-                log.info(f'Sent response to {websocket.local_address}')
+            try:
+                message = await websocket.recv()
+                address = self._pool.get_actual_address(websocket)
+                log.info(f'Received event from {address}')
+                response = await self._handle_message(message, websocket)
+                if response:
+                    await self.send(websocket, response)
+                    log.info(f'Sent response to {address}')
+            except ConnectionClosed as cc:
+                log.debug(f'_listen CC {cc}')
+                self._pool.unregister_connection(websocket, cc)
+                break
 
     async def _listen_outgoing(self, websocket, address):
         await self._pool.register_connection(address, websocket)
         asyncio.ensure_future(self._listen(websocket))
         my_port_event = Event.construct(Event.MY_PORT, self.port)
-        await Node.send(websocket, my_port_event)
+        await self.send(websocket, my_port_event)
 
     async def _listen_incoming(self, websocket, uri=''):
         # TODO: why await? It doesn't work without await
@@ -132,12 +138,13 @@ class Node:
             log.warning(f'Unknown event {event}')
         return response
 
-    @staticmethod
-    async def send(websocket, message):
+    async def send(self, websocket, message):
+        address = self._pool.get_actual_address(websocket)
         try:
-            log.info(f'Sending event to {websocket.local_address}:{websocket.remote_address}')
+            log.info(f'Sending event to {address}')
             await websocket.send(message)
         except ConnectionClosed as cc:
-            log.info(f'Connection to {websocket} is closed. {cc}')
+            log.info(f'Connection to {address} is closed. {cc}')
+            self._pool.unregister_connection(websocket, cc)
         except Exception as e:
             log.error(f'Unexpected error occurred during send {e}')
