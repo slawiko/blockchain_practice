@@ -8,6 +8,7 @@ from pool import Pool
 from event import Event
 from blockchain import Blockchain
 from transaction import Transaction
+from keys import keys
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -26,6 +27,7 @@ class Node:
         self._auto_discovering_interval = auto_discovering_interval
         self._seeds = seeds
         self._pool = Pool()
+        self._public_key, self.__private_key = keys()
 
     async def start(self):
         await websockets.serve(self._listen_incoming, port=self.port)
@@ -106,22 +108,23 @@ class Node:
         await self.add_transaction(data, signature)
 
     async def create_transaction(self, data):
-        transaction = Transaction(data)
-        signature = transaction.sign()
-        return await self.add_transaction(transaction, signature)
+        if not self._public_key or not self.__private_key:
+            raise Exception('private/public key pair need to be initialized first')
+
+        transaction = Transaction(data, self._public_key)
+        signature = transaction.sign(self.__private_key)
+        await self.add_transaction(transaction, signature)
 
     async def add_transaction(self, transaction, signature):
-        done = self.blockchain.add_transaction(transaction, signature)
-        if done:
-            event = Event.construct(Event.ADD_TRANSACTION, transaction, signature)
-            await self.broadcast(event)
-            return done
+        self.blockchain.add_transaction(transaction, signature)
+        event = Event.construct(Event.ADD_TRANSACTION, transaction, signature)
+        await self.broadcast(event)
 
     def get_transactions(self):
         return self.blockchain.transactions
 
     def public_key(self):
-        return self.blockchain.public_key.to_string().hex()
+        return self._public_key.to_string().hex()
 
     async def _handle_message(self, message, websocket):
         event = Event.parse(message)

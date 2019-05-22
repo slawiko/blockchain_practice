@@ -1,5 +1,5 @@
 from block import Block
-from transaction import Transaction, keys
+from transaction import Transaction
 
 
 def is_valid_chain(chain):
@@ -20,17 +20,15 @@ class Blockchain:
         self.chain = []
         self.chain.append(Block.genesis())
         self.transactions = {}
-        self.__private_key, self.public_key = keys()
 
     def add_transaction(self, transaction, signature):
         if not Transaction.is_valid(transaction, signature):
-            return False
+            raise ValueError('Transaction is not valid')
 
         if transaction.digest in self.transactions:
-            return False
+            raise ValueError('Transaction already exists')
 
         self.transactions[transaction.digest] = transaction
-        return True
 
     def add_block(self):
         if len(self.transactions) == 0:

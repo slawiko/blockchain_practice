@@ -37,13 +37,19 @@ def main(node):
     async def new_transaction(request):
         data = request.body
 
-        result = await node.create_transaction(data)
-        if result:
-            message = 'Transaction will be added'
+        try:
+            await node.create_transaction(data)
+        except ValueError:
+            res = {'error': 'Transaction will not be added'}
+            status = 422
+        except:
+            res = {'error': 'Transaction will not be added'}
+            status = 500
         else:
-            message = 'Transaction will not be added'
+            res = {'message': 'Transaction will be added'}
+            status = 200
 
-        return response.json({'message': message})
+        return response.json(res, status=status)
 
     @app.route('/transactions')
     def get_transactions(request):
