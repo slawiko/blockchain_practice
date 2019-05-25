@@ -3,9 +3,7 @@ import hashlib
 
 import ecdsa
 
-logging.basicConfig(level=logging.WARNING)
-log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
+log = logging.getLogger(__package__)
 
 
 class Transaction:

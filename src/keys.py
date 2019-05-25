@@ -4,9 +4,7 @@ import logging
 
 import ecdsa
 
-logging.basicConfig(level=logging.WARNING)
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 
 
 def keys(path='keys.dat'):

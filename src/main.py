@@ -5,9 +5,9 @@ import json
 from sanic import Sanic, response
 
 from node import Node
-from transaction import Transaction
+from blockchain.transaction import Transaction
 
-logging.basicConfig(level=logging.WARNING)
+logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 
@@ -42,7 +42,8 @@ def main(node):
         except ValueError:
             res = {'error': 'Transaction will not be added'}
             status = 422
-        except:
+        except BaseException as e:
+            log.error(e)
             res = {'error': 'Transaction will not be added'}
             status = 500
         else:

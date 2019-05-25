@@ -16,9 +16,9 @@ class Block:
         self.previousHash = previous_hash
         self.transactions = transactions
         self.timestamp = timestamp
-        self.hash = self.calculateHash()
+        self.hash = self.calculate_hash()
 
-    def calculateHash(self):
+    def calculate_hash(self):
         # TODO: transactions can raise here an error
         data = f'{self.timestamp}\n{self.previousHash}\n{self.transactions}'.encode('utf-8')
         return hashlib.sha256(data).hexdigest()

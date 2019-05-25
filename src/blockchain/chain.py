@@ -1,5 +1,5 @@
-from block import Block
-from transaction import Transaction
+from .block import Block
+from .transaction import Transaction
 
 
 def is_valid_chain(chain):
@@ -41,7 +41,7 @@ class Blockchain:
 
     def replace_chain(self, chain):
         if len(chain) <= len(self.chain):
-            raise ValueError('New chain must be greater than old one')
+            raise ValueError('New chain must be longer than old one')
 
         self.chain = chain
 

@@ -6,12 +6,11 @@ from websockets.exceptions import ConnectionClosed
 
 from pool import Pool
 from event import Event
-from blockchain import Blockchain
-from transaction import Transaction
+from blockchain.chain import Blockchain
+from blockchain.transaction import Transaction
 from keys import keys
 
 log = logging.getLogger(__name__)
-log.setLevel(logging.DEBUG)
 
 
 def parse_ip(ip):
@@ -27,7 +26,7 @@ class Node:
         self._auto_discovering_interval = auto_discovering_interval
         self._seeds = seeds
         self._pool = Pool()
-        self._public_key, self.__private_key = keys()
+        self.__private_key, self._public_key = keys()
 
     async def start(self):
         await websockets.serve(self._listen_incoming, port=self.port)
