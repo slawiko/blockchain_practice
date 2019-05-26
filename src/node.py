@@ -8,6 +8,7 @@ from pool import Pool
 from event import Event
 from blockchain import Blockchain
 from transaction import Transaction
+from keys import keys
 
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
@@ -26,18 +27,19 @@ class Node:
         self._auto_discovering_interval = auto_discovering_interval
         self._seeds = seeds
         self._pool = Pool()
+        self._public_key, self.__private_key = keys()
 
     async def start(self):
         await websockets.serve(self._listen_incoming, port=self.port)
         log.info(f'ws server started at port {self.port}')
-        await self._connect(self._seeds)
+        await self._connect(map(parse_ip, self._seeds))
         log.info(f'ws server connected to peers')
         if self._auto_discovering:
             await self._start_auto_discover()
             log.info(f'auto discovering started')
 
     async def _connect(self, addresses):
-        for address in map(parse_ip, addresses):
+        for address in addresses:
             websocket = await websockets.connect(f'ws://{address[0]}:{address[1]}')
             await self._listen_outgoing(websocket, address)
 
@@ -65,12 +67,14 @@ class Node:
         while True:
             try:
                 message = await websocket.recv()
-                log.info(f'Received event from {websocket.local_address}:{websocket.remote_address}')
+                address = self._pool.get_actual_address(websocket)
+                log.info(f'Received event from {address}')
                 response = await self._handle_message(message, websocket)
                 if response:
                     await self.send(websocket, response)
-                    log.info(f'Sent response to {websocket.local_address}')
+                    log.info(f'Sent response to {address}')
             except ConnectionClosed as cc:
+                log.debug(f'_listen CC {cc}')
                 self._pool.unregister_connection(websocket, cc)
                 break
 
@@ -104,22 +108,23 @@ class Node:
         await self.add_transaction(data, signature)
 
     async def create_transaction(self, data):
-        transaction = Transaction(data)
-        signature = transaction.sign()
-        return await self.add_transaction(transaction, signature)
+        if not self._public_key or not self.__private_key:
+            raise Exception('private/public key pair need to be initialized first')
+
+        transaction = Transaction(data, self._public_key)
+        signature = transaction.sign(self.__private_key)
+        await self.add_transaction(transaction, signature)
 
     async def add_transaction(self, transaction, signature):
-        done = self.blockchain.add_transaction(transaction, signature)
-        if done:
-            event = Event.construct(Event.ADD_TRANSACTION, transaction, signature)
-            await self.broadcast(event)
-            return done
+        self.blockchain.add_transaction(transaction, signature)
+        event = Event.construct(Event.ADD_TRANSACTION, transaction, signature)
+        await self.broadcast(event)
 
     def get_transactions(self):
         return self.blockchain.transactions
 
     def public_key(self):
-        return self.blockchain.public_key.to_string().hex()
+        return self._public_key.to_string().hex()
 
     async def _handle_message(self, message, websocket):
         event = Event.parse(message)
@@ -137,11 +142,12 @@ class Node:
         return response
 
     async def send(self, websocket, message):
+        address = self._pool.get_actual_address(websocket)
         try:
-            log.info(f'Sending event to {websocket.local_address}:{websocket.remote_address}')
+            log.info(f'Sending event to {address}')
             await websocket.send(message)
         except ConnectionClosed as cc:
-            log.info(f'Connection to {websocket} is closed. {cc}')
+            log.info(f'Connection to {address} is closed. {cc}')
             self._pool.unregister_connection(websocket, cc)
         except Exception as e:
             log.error(f'Unexpected error occurred during send {e}')
