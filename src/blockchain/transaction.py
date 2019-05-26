@@ -1,7 +1,7 @@
 import logging
 import hashlib
 
-import ecdsa
+from keys import verify
 
 log = logging.getLogger(__package__)
 
@@ -38,12 +38,3 @@ class Transaction:
     @staticmethod
     def is_valid(transaction, signature):
         return verify(transaction.public, transaction.digest, signature)
-
-
-def verify(public_key, data, signature):
-    vk = ecdsa.VerifyingKey.from_string(public_key)
-    try:
-        vk.verify(signature, data)
-        return True
-    except ecdsa.BadSignatureError:
-        return False

@@ -13,6 +13,7 @@ from time import time
 
 class Block:
     def __init__(self, previous_hash, transactions, timestamp=time()):
+        # TODO: merkle tree?
         self.previousHash = previous_hash
         self.transactions = transactions
         self.timestamp = timestamp

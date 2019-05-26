@@ -1,5 +1,5 @@
 from .block import Block
-from .transaction import Transaction
+from .pool import TransactionPool
 
 
 def is_valid_chain(chain):
@@ -19,23 +19,14 @@ class Blockchain:
     def __init__(self):
         self.chain = []
         self.chain.append(Block.genesis())
-        self.transactions = {}
+        self.transaction_pool = TransactionPool()
 
-    def add_transaction(self, transaction, signature):
-        if not Transaction.is_valid(transaction, signature):
-            raise ValueError('Transaction is not valid')
-
-        if transaction.digest in self.transactions:
-            raise ValueError('Transaction already exists')
-
-        self.transactions[transaction.digest] = transaction
-
-    def add_block(self):
-        if len(self.transactions) == 0:
+    def mine_block(self):
+        transactions = self.transaction_pool.get_transactions()
+        if len(transactions) == 0:
             return False
 
-        self.chain.append(Block(self.last_block_hash, self.transactions))
-        self.transactions = {}
+        self.chain.append(Block(self.last_block_hash, transactions))
 
         return self.last_block_hash
 

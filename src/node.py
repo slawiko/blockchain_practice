@@ -8,6 +8,7 @@ from pool import Pool
 from event import Event
 from blockchain.chain import Blockchain
 from blockchain.transaction import Transaction
+from blockchain.pool import TransactionPool
 from keys import keys
 
 log = logging.getLogger(__name__)
@@ -22,6 +23,7 @@ class Node:
     def __init__(self, seeds, port=8765, auto_discovering=True, auto_discovering_interval=30):
         self.port = int(port)
         self.blockchain = Blockchain()
+        self._transaction_pool = TransactionPool()
         self._auto_discovering = auto_discovering
         self._auto_discovering_interval = auto_discovering_interval
         self._seeds = seeds
@@ -62,7 +64,7 @@ class Node:
         except Exception as error:
             log.error(f'unable to connect. {error}')
 
-    async def _listen(self, websocket, uri=''):
+    async def _listen(self, websocket):
         while True:
             try:
                 message = await websocket.recv()
@@ -115,12 +117,12 @@ class Node:
         await self.add_transaction(transaction, signature)
 
     async def add_transaction(self, transaction, signature):
-        self.blockchain.add_transaction(transaction, signature)
+        self._transaction_pool.add_transaction(transaction, signature)
         event = Event.construct(Event.ADD_TRANSACTION, transaction, signature)
         await self.broadcast(event)
 
     def get_transactions(self):
-        return self.blockchain.transactions
+        return self._transaction_pool.get_transactions()
 
     def public_key(self):
         return self._public_key.to_string().hex()
