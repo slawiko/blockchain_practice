@@ -1,5 +1,4 @@
 from .block import Block
-from .pool import TransactionPool
 
 
 def is_valid_chain(chain):
@@ -19,10 +18,8 @@ class Blockchain:
     def __init__(self):
         self.chain = []
         self.chain.append(Block.genesis())
-        self.transaction_pool = TransactionPool()
 
-    def mine_block(self):
-        transactions = self.transaction_pool.get_transactions()
+    def mine_block(self, transactions):
         if len(transactions) == 0:
             return False
 

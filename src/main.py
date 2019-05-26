@@ -7,7 +7,7 @@ from sanic import Sanic, response
 from node import Node
 from blockchain.transaction import Transaction
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
 log.setLevel(logging.DEBUG)
 

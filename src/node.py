@@ -33,8 +33,10 @@ class Node:
     async def start(self):
         await websockets.serve(self._listen_incoming, port=self.port)
         log.info(f'ws server started at port {self.port}')
+
         await self._connect(map(parse_ip, self._seeds))
         log.info(f'ws server connected to peers')
+
         if self._auto_discovering:
             await self._start_auto_discover()
             log.info(f'auto discovering started')
@@ -75,7 +77,7 @@ class Node:
                     await self.send(websocket, response)
                     log.info(f'Sent response to {address}')
             except ConnectionClosed as cc:
-                log.debug(f'_listen CC {cc}')
+                log.warning(f'_listen CC {cc}')
                 self._pool.unregister_connection(websocket, cc)
                 break
 
@@ -87,26 +89,7 @@ class Node:
 
     async def _listen_incoming(self, websocket, uri=''):
         # TODO: why await? It doesn't work without await
-        asyncio.ensure_future(await self._listen(websocket, uri))
-
-    def _handle_get_peers_request(self, ws):
-        return Event.construct(Event.GET_PEERS_RESPONSE, self._pool.get_all_except(ws))
-
-    async def _handle_get_peers_response(self, data):
-        addresses = [tuple(x) for x in data]
-        new_addresses = [address for address in addresses if address not in self._pool.actual_addresses]
-
-        if new_addresses:
-            log.info(f'New peers found: {new_addresses}')
-            await self._connect(new_addresses)
-        log.info(f'No new peers found')
-
-    async def _handle_my_port(self, port, websocket):
-        actual_address = Pool.actual_address(port, websocket)
-        await self._pool.register_connection(actual_address, websocket)
-
-    async def _handle_add_transaction(self, data, signature):
-        await self.add_transaction(data, signature)
+        asyncio.ensure_future(await self._listen(websocket))
 
     async def create_transaction(self, data):
         if not self._public_key or not self.__private_key:
@@ -127,6 +110,17 @@ class Node:
     def public_key(self):
         return self._public_key.to_string().hex()
 
+    async def send(self, websocket, message):
+        address = self._pool.get_actual_address(websocket)
+        try:
+            await websocket.send(message)
+            log.info(f'Sent event to {address}')
+        except ConnectionClosed as cc:
+            log.info(f'Connection to {address} is closed. {cc}')
+            self._pool.unregister_connection(websocket, cc)
+        except Exception as e:
+            log.error(f'Unexpected error occurred during send {e}')
+
     async def _handle_message(self, message, websocket):
         event = Event.parse(message)
         response = None
@@ -142,13 +136,21 @@ class Node:
             log.warning(f'Unknown event {event}')
         return response
 
-    async def send(self, websocket, message):
-        address = self._pool.get_actual_address(websocket)
-        try:
-            log.info(f'Sending event to {address}')
-            await websocket.send(message)
-        except ConnectionClosed as cc:
-            log.info(f'Connection to {address} is closed. {cc}')
-            self._pool.unregister_connection(websocket, cc)
-        except Exception as e:
-            log.error(f'Unexpected error occurred during send {e}')
+    def _handle_get_peers_request(self, ws):
+        return Event.construct(Event.GET_PEERS_RESPONSE, self._pool.get_all_except(ws))
+
+    async def _handle_get_peers_response(self, data):
+        addresses = [tuple(x) for x in data]
+        new_addresses = [address for address in addresses if address not in self._pool.actual_addresses]
+
+        if new_addresses:
+            log.info(f'New peers found: {new_addresses}')
+            await self._connect(new_addresses)
+        log.info(f'No new peers found')
+
+    async def _handle_my_port(self, port, websocket):
+        actual_address = Pool.actual_address(port, websocket)
+        await self._pool.register_connection(actual_address, websocket)
+
+    async def _handle_add_transaction(self, data, signature):
+        await self.add_transaction(data, signature)
