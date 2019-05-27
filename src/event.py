@@ -6,7 +6,8 @@ class Event(EnumMeta):
     MY_PORT = 'MY_PORT'
     GET_PEERS_REQUEST = 'GET_PEERS_REQUEST'
     GET_PEERS_RESPONSE = 'GET_PEERS_RESPONSE'
-    ADD_TRANSACTION = 'ADD_TRANSACTION'
+    NEW_TRANSACTION = 'NEW_TRANSACTION'
+    NEW_BLOCK = 'NEW_BLOCK'
 
     @staticmethod
     def parse(serialized_event):

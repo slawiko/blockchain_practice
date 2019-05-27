@@ -101,14 +101,32 @@ class Node:
 
     async def add_transaction(self, transaction, signature):
         self._transaction_pool.add_transaction(transaction, signature)
-        event = Event.construct(Event.ADD_TRANSACTION, transaction, signature)
+        event = Event.construct(Event.NEW_TRANSACTION, transaction, signature)
         await self.broadcast(event)
+
+    async def add_block(self, transaction, signature):
+        pass
 
     def get_transactions(self):
         return self._transaction_pool.get_transactions()
 
+    def get_blocks(self):
+        return self.blockchain.chain
+
     def public_key(self):
         return self._public_key.to_string().hex()
+
+    def mine(self):
+        transactions = self._transaction_pool.pop_transactions()
+        try:
+            block = self.blockchain.mine_block(transactions)
+            signature = block.sign(self.__private_key)
+            event = Event.construct(Event.NEW_BLOCK, block, signature)
+            asyncio.get_event_loop().create_task(self.broadcast(event))
+        # TODO: MineException
+        except BaseException as e:
+            log.error(f'Error occurred during mining: {e}')
+            self._transaction_pool.push_transactions(transactions)
 
     async def send(self, websocket, message):
         address = self._pool.get_actual_address(websocket)
@@ -130,8 +148,10 @@ class Node:
             asyncio.ensure_future(self._handle_get_peers_response(event['data']))
         elif event['type'] == Event.MY_PORT:
             asyncio.ensure_future(self._handle_my_port(event['data'], websocket))
-        elif event['type'] == Event.ADD_TRANSACTION:
-            asyncio.ensure_future(self._handle_add_transaction(event['data'], event['sign']))
+        elif event['type'] == Event.NEW_TRANSACTION:
+            asyncio.ensure_future(self._handle_new_transaction(event['data'], event['sign']))
+        elif event['type'] == Event.NEW_BLOCK:
+            asyncio.ensure_future(self._handle_new_block(event['data'], event['sign']))
         else:
             log.warning(f'Unknown event {event}')
         return response
@@ -152,5 +172,8 @@ class Node:
         actual_address = Pool.actual_address(port, websocket)
         await self._pool.register_connection(actual_address, websocket)
 
-    async def _handle_add_transaction(self, data, signature):
-        await self.add_transaction(data, signature)
+    async def _handle_new_transaction(self, transaction, signature):
+        await self.add_transaction(transaction, signature)
+
+    async def _handle_new_block(self, block, signature):
+        await self.add_block(block, signature)

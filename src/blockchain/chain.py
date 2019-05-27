@@ -8,7 +8,7 @@ def is_valid_chain(chain):
     for i in range(1, len(chain)):
         previous = chain[i - 1]
         current = chain[i]
-        if current.previousHash != previous.hash():
+        if current.previousHash != previous.hash:
             return False
 
     return True
@@ -23,9 +23,11 @@ class Blockchain:
         if len(transactions) == 0:
             return False
 
-        self.chain.append(Block(self.last_block_hash, transactions))
+        block = Block(self.last_block_hash, transactions)
 
-        return self.last_block_hash
+        self.chain.append(block)
+
+        return block
 
     def replace_chain(self, chain):
         if len(chain) <= len(self.chain):
@@ -39,4 +41,4 @@ class Blockchain:
 
     @property
     def last_block_hash(self):
-        return self.last_block.calculateHash()
+        return self.last_block.hash

@@ -6,6 +6,7 @@ from sanic import Sanic, response
 
 from node import Node
 from blockchain.transaction import Transaction
+from blockchain.block import Block
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -23,11 +24,18 @@ parser.add_argument('--seeds', metavar='SEEDS', type=str, nargs='*', dest='seeds
 args = parser.parse_args()
 
 
-def custom_dumps(transactions):
+def dump_transactions(transactions):
     if all(isinstance(t, Transaction) for t in transactions.values()):
         return json.dumps(list(map(Transaction.dumps, transactions.values())))
 
-    raise TypeError('only list of Transactions is supported')
+    raise TypeError('only dict of Transactions is supported')
+
+
+def dump_blocks(blocks):
+    if all(isinstance(t, Block) for t in blocks):
+        return json.dumps(list(map(Block.dumps, blocks)))
+
+    raise TypeError('only list of Blocks is supported')
 
 
 def main(node):
@@ -55,7 +63,25 @@ def main(node):
     @app.route('/transactions')
     def get_transactions(request):
         transactions = node.get_transactions()
-        return response.json(transactions, dumps=custom_dumps)
+        return response.json(transactions, dumps=dump_transactions)
+
+    @app.route('/blocks')
+    def get_blocks(request):
+        blocks = node.get_blocks()
+        return response.json(blocks, dumps=dump_blocks)
+
+    @app.route('/mine', methods=['POST'])
+    def mine(request):
+        try:
+            node.mine()
+            res = {'message': f'Block is mined successfully'}
+            status = 200
+        except BaseException as e:
+            log.error(e)
+            res = {'message': 'Error occurred during mining'}
+            status = 500
+
+        return response.json(res, status=status)
 
     @app.route('/public-key', methods=['GET'])
     def get_public_key(request):
