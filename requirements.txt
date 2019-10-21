@@ -1,6 +1,6 @@
 aiofiles==0.4.0
 asyncio==3.4.3
-ecdsa==0.13.2
+ecdsa==0.13.3
 httptools==0.0.13
 multidict==4.5.2
 sanic==18.12.0
